@@ -173,6 +173,7 @@ fs.copyFileSync(path.join(tpl, "plan.md"), path.join(R, "plan.md"));
 fs.copyFileSync(path.join(tpl, "CLAUDE.md"), path.join(R, "CLAUDE.md"));
 let out = run("reinject-rules.js", R, { hook_event_name: "SessionStart", source: "compact" }).stdout;
 check(!out.includes("작업 제목"), "템플릿 plan.md 주석 속 예시는 할 일로 넣지 않음");
+check(!out.includes("배포 결과물") && !out.includes("환경변수를 설정"),"템플릿 plan.md의 출시 전 확인 줄은 할 일로 넣지 않음");
 check(out.includes("## 하지 말 것"), "reinjectSections에 적은 섹션 포함");
 check(!out.includes("## 작업 진행 방식"), "적지 않은 섹션은 제외");
 fs.writeFileSync(path.join(R, "plan.md"), "\uFEFF# plan\r\n\r\n## 다음 작업 (구현 예정)\r\n\r\n### [ ] 주문 취소 API\r\n### [x] 끝난 일\r\n\r\n## 완료\r\n\r\n### [ ] 완료 섹션의 잘못된 항목\r\n");
@@ -180,6 +181,9 @@ fs.writeFileSync(path.join(R, "CLAUDE.md"), "# t\n\n## 하지 말 것 ##\n\n- �
 out = run("reinject-rules.js", R, {}).stdout;
 check(out.includes("### [ ] 주문 취소 API") && !out.includes("끝난 일") && !out.includes("잘못된 항목"), "다음 작업 섹션의 미완료 항목만 (BOM·CRLF)");
 check(out.includes("금지 B") && !out.includes("무관"), "닫는 #·코드 펜스가 있어도 섹션 끝까지");
+fs.writeFileSync(path.join(R, "plan.md"), "# plan\n\n## 다음 작업 (구현 예정)\n\n- [ ] 결제 화면\n\n## 출시 전 확인\n\n- [ ] 개인정보처리방침 페이지\n\n## 완료\n");
+out = run("reinject-rules.js", R, {}).stdout;
+check(out.includes("결제 화면") && !out.includes("개인정보처리방침"), "출시 전 확인 섹션의 체크 줄은 다음 작업에 섞지 않음");
 // AGENTS 방식: CLAUDE.md가 @AGENTS.md를 가져오고 공통 규칙은 AGENTS.md에 있다
 const RA = makeProject({ reinjectSections: ["검증 명령", "하지 말 것"] });
 fs.writeFileSync(path.join(RA, "CLAUDE.md"), "@AGENTS.md\n\n## 작업 방식\n\n- 계획은 /team-ai:plan-feature\n");
