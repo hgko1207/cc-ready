@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.6.0 — 2026-11-17
+
+이름을 **team-ai-kit에서 cc-ready로** 바꿨다. 혼자 쓰는 사람에게 팀 전용처럼 보이던 이름을, 키트의 핵심인 "명령 하나로 저장소에 맞는 Claude Code 세팅"에 맞췄다. 동작은 바뀌지 않았다.
+
+- 마켓플레이스 `team-ai-kit` → `cc-ready`, 플러그인 `team-ai` → `cc-ready`, `team-ai-extras` → `cc-ready-extras`. 명령은 `/cc-ready:setup`, `/cc-ready:verify` 등으로 바뀐다.
+- 설치: `claude plugin marketplace add hgko1207/cc-ready`, `claude plugin install cc-ready@cc-ready`. 예전 이름으로 설치했다면 `claude plugin uninstall team-ai@team-ai-kit` 뒤 새로 설치한다.
+- 팀 설정 파일은 `.claude/cc-ready.json`으로 바뀌었다. 예전 `.claude/team-ai.json`도 계속 읽고 보호한다(새 파일이 있으면 새 파일 우선). 테스트 3개 추가.
+- README에 Anthropic과 관계없는 개인 도구라는 안내를 넣었다.
+
 ## 0.5.0 — 2026-11-15
 
 출시 직전에 빠뜨리기 쉬운 것을 plan.md에서 챙기게 했다.

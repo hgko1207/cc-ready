@@ -19,7 +19,7 @@ argument-hint: "[--dry-run]"
 
 1. git 저장소인지, 작업 트리가 깨끗한지 확인한다. 변경이 있으면 알리고 계속할지 묻는다.
 2. 기본 브랜치(main/master)에 있으면 `chore/claude-setup` 브랜치를 만들자고 제안한다.
-3. 이미 있는 파일을 확인한다: `CLAUDE.md`, `AGENTS.md`, `plan.md`, `.claude/settings.json`, `.claude/team-ai.json`, `.claude/rules/`, `.vscode/settings.json`, `.gitignore`.
+3. 이미 있는 파일을 확인한다: `CLAUDE.md`, `AGENTS.md`, `plan.md`, `.claude/settings.json`, `.claude/cc-ready.json`(없으면 예전 이름 `.claude/team-ai.json`), `.claude/rules/`, `.vscode/settings.json`, `.gitignore`.
 4. `node --version`을 확인한다. Node가 없으면 훅이 실행되지 않아 **차단이 모두 꺼진다.** 보고서 맨 위에 경고로 적고, 팀원 PC에도 Node가 필요하다고 안내한다.
 5. 지침 파일 방식을 정한다 (아래 표). **AGENTS 방식**은 Claude Code와 Codex 같은 다른 AI 도구가 같은 규칙을 읽게 하는 방식이다. 공통 규칙은 `AGENTS.md`에 두고, `CLAUDE.md`는 첫 줄 `@AGENTS.md`로 그 내용을 가져온 뒤 Claude 전용 섹션만 둔다. Claude Code는 CLAUDE.md가 있으면 AGENTS.md를 따로 읽지 않으므로 이 import가 꼭 있어야 한다. CLAUDE.md에 "AGENTS.md를 보라"는 글만 쓰면 내용이 들어오지 않는다.
 
@@ -46,7 +46,7 @@ argument-hint: "[--dry-run]"
 | `CLAUDE.md` (AGENTS 방식) | `templates/agents-mode/CLAUDE.md`로 생성 | 첫 줄에 `@AGENTS.md`가 없으면 넣고, 빠진 Claude 전용 섹션(작업 방식, 작업 진행 방식)만 추가. 공통 섹션은 추가하지 않는다 (AGENTS.md와 중복) |
 | `plan.md` | `templates/plan.md`로 생성, "현재 상태"와 "출시 전 확인"(아래) 채움 | 기존 내용은 그대로 둔다. `## 다음 작업 (구현 예정)`과 `## 완료` 섹션이 없으면 **반드시** 파일 끝에 추가한다 (plan-feature·verify·재주입 훅이 이 제목을 찾는다). `## 출시 전 확인`은 넣지 않고, 보고서 "팀이 정할 것"에 아직 출시 전이면 넣자고 제안한다 (이미 출시한 저장소에는 쓸모없는 목록이다) |
 | `.claude/settings.json` | 템플릿으로 생성 | 훅이 기존 설정 파일 수정을 막는다. 병합한 전체 내용(키별 병합, `allow`·`ask`·`deny` 합집합, **기존 deny는 그대로**)을 보여 주고 사용자에게 직접 적용해 달라고 요청한다 |
-| `.claude/team-ai.json` | 템플릿으로 생성 | 위와 같이 병합 내용을 보여 주고 사용자에게 적용을 요청한다 (배열은 합집합, 값은 기존 우선) |
+| `.claude/cc-ready.json` | 템플릿으로 생성. 단 예전 이름 `.claude/team-ai.json`이 있으면 새로 만들지 않는다(새 파일이 생기면 예전 설정이 무시된다). 훅이 예전 파일을 그대로 읽으므로 그대로 두고, 보고서에 "이름을 cc-ready.json으로 바꾸려면 사람이 파일 이름만 바꾸면 된다"고 적는다 | 위와 같이 병합 내용을 보여 주고 사용자에게 적용을 요청한다 (배열은 합집합, 값은 기존 우선) |
 | `.claude/rules/<스택>.md` | 아래 4번 | 그대로 둔다 |
 | `.vscode/settings.json`, `extensions.json` | 템플릿으로 생성 | `claudeCode.*` 키와 recommendations만 병합. 주석·끝 쉼표가 있는 JSONC이므로 `JSON.parse`로 다시 쓰지 말고 Edit로 키만 추가해 기존 주석을 보존한다 |
 | `.gitignore` | `templates/gitignore.snippet`로 생성 | 없는 줄만 끝에 추가. `.vscode/`(폴더 통째) 규칙이 있으면 `.vscode/*`로 바꾸고 `!.vscode/settings.json`, `!.vscode/extensions.json`을 추가한다 (폴더째 무시하면 `!` 예외가 동작하지 않는다) |
@@ -54,7 +54,7 @@ argument-hint: "[--dry-run]"
 
 **ai-workflow.md 채우기** (팀원이 그대로 읽는 문서라 `{{`가 남으면 안 된다)
 - `{{org}}`는 settings.json과 같은 값으로 바꾼다.
-- `{{보호 경로}}`는 team-ai.json에 추가한 `protectedPaths`를 쉬운 말로 적는다(예: "DB 마이그레이션 폴더"). 추가한 것이 없으면 `, {{보호 경로}}` 부분을 지운다.
+- `{{보호 경로}}`는 cc-ready.json에 추가한 `protectedPaths`를 쉬운 말로 적는다(예: "DB 마이그레이션 폴더"). 추가한 것이 없으면 `, {{보호 경로}}` 부분을 지운다.
 - 계정 담당자, 문의 채널처럼 코드에서 알 수 없는 값은 사용자에게 묻는다. 답이 없으면 남기고 "팀이 정할 것"에 적는다.
 
 **plan.md "출시 전 확인" 채우기** (새로 만드는 plan.md만)
@@ -77,7 +77,7 @@ argument-hint: "[--dry-run]"
 
 **AGENTS 방식일 때 추가 규칙** (위 규칙은 AGENTS.md에도 똑같이 적용)
 - 공통 규칙(구조, 명령, 검증 명령, 원칙, 코딩·커밋 규칙, 하지 말 것, 용어)은 AGENTS.md에만 쓴다. CLAUDE.md에 같은 내용을 또 쓰지 않는다.
-- AGENTS.md에는 `/team-ai:*`, 훅, Claude 권한 모드처럼 Claude Code에만 있는 이름을 쓰지 않는다. 다른 도구가 읽고 헷갈린다. 그런 내용은 CLAUDE.md에 둔다.
+- AGENTS.md에는 `/cc-ready:*`, 훅, Claude 권한 모드처럼 Claude Code에만 있는 이름을 쓰지 않는다. 다른 도구가 읽고 헷갈린다. 그런 내용은 CLAUDE.md에 둔다.
 - `@AGENTS.md`는 CLAUDE.md 첫 줄에, 코드 펜스·백틱·따옴표 없이 둔다. 펜스 안이나 따옴표로 감싸면 가져오지 않는다.
 - 기존 CLAUDE.md에 이미 공통 섹션(예: 검증 명령)이 있으면 AGENTS.md에 같은 제목의 섹션을 새로 만들지 않는다. import로 두 파일이 같이 읽혀 같은 섹션이 두 번 들어가고, 내용이 갈라진다. 옮기지도 않고, 보고서 "팀이 정할 것"에 "CLAUDE.md의 ○○ 섹션을 AGENTS.md로 옮기면 다른 도구도 읽는다"고 적는다.
 - 기존 AGENTS.md에 다른 도구 전용 내용(예: Codex 승인 설정 안내)이 있어도 지우거나 옮기지 않는다. 보고서에 "다른 도구 전용으로 보이는 줄"로 알린다.
@@ -88,9 +88,9 @@ argument-hint: "[--dry-run]"
 - 저장소에 다른 비밀 파일 패턴이 있으면 `deny`에 `Read(...)`를 추가한다.
 - `{{org}}`는 마켓플레이스 저장소 주인으로 바꾼다. 기본은 공개 키트의 `hgko1207`이다. 이 PC의 키트가 다른 곳(회사 사본, 사내 git)에서 설치됐으면(`claude plugin marketplace list`의 Source) 그 주인을 쓰고, GitHub가 아닌 주소면 `source` 형식을 그에 맞게 바꾼다. `{{org}}`를 남긴 채 두면 팀원 PC에서 플러그인 설치가 실패한다.
 
-**team-ai.json 채우기**
+**cc-ready.json 채우기**
 - 기본 보호 목록(.env, 키 파일, secrets/, .git/ 등)과 보호 브랜치(main, master, develop, release/* 등)는 훅에 내장되어 항상 켜져 있다. 이 파일에는 **이 저장소에만 필요한 것만 추가**한다. 기본 목록을 줄일 수는 없다.
-- 보호 브랜치 훅은 그 브랜치에 대한 **강제 push와 브랜치 삭제만** 막는다. 일반 커밋과 push는 막지 않는다. 기본 브랜치에서 커밋하려 하면 브랜치를 제안하는 것은 `/team-ai:commit` 스킬이고, 사용자가 진행하라고 하면 커밋한다.
+- 보호 브랜치 훅은 그 브랜치에 대한 **강제 push와 브랜치 삭제만** 막는다. 일반 커밋과 push는 막지 않는다. 기본 브랜치에서 커밋하려 하면 브랜치를 제안하는 것은 `/cc-ready:commit` 스킬이고, 사용자가 진행하라고 하면 커밋한다.
 - 마이그레이션 폴더, 자동 생성 코드 폴더를 `protectedPaths`에 추가한다. 예: `"db/migrations/**"`. 사람이 고치는 일반 소스·스크립트는 넣지 않는다 (보호가 지나치면 정상 작업이 막힌다).
 - 로컬에 설치된 포매터가 있을 때만 `formatCommand`를 배열로 채운다. 예: `["npx", "--no-install", "prettier", "--write", "{file}"]`. 대상 확장자를 `formatExtensions`에 적는다. Markdown은 넣지 않는다.
 - 이 파일이 JSON 문법 오류이면 훅이 안전을 위해 모든 파일 수정과 명령을 막는다. 처음 만들 때 한 번에 올바르게 쓰고, 쓴 뒤 반드시 파싱해 본다. 만든 뒤에는 Claude가 고칠 수 없고 사람이 고친다.
@@ -111,14 +111,14 @@ argument-hint: "[--dry-run]"
 3. 사용자에게 Claude Code를 다시 열고 아래를 확인하라고 안내한다.
    - `/context`에서 CLAUDE.md와 의도한 rule만 로드됐는지 (AGENTS 방식이면 AGENTS.md 내용도 함께 들어왔는지)
    - `.env.test 파일을 만들고 A=1 한 줄 넣어줘`가 훅에 막히는지 (`.env`는 Claude가 규칙을 보고 먼저 거절해 훅 동작을 확인할 수 없다)
-   - `/team-ai:verify`가 검증 명령을 실행하는지
+   - `/cc-ready:verify`가 검증 명령을 실행하는지
 
 ## 6. 보고
 
 훅과 스킬이 무엇을 막고 무엇을 하는지는 이 문서에 적힌 것만 보고한다. 적혀 있지 않은 동작을 짐작해 경고하지 않는다.
 
 파일을 쓰지 못한 경우는 원인을 구분해서 적는다.
-- **팀 설정 파일 보호 훅**: 이미 있는 `.claude/settings.json`·`team-ai.json`. 병합한 전체 내용을 보여 주고 사용자에게 직접 적용을 요청한다.
+- **팀 설정 파일 보호 훅**: 이미 있는 `.claude/settings.json`·`cc-ready.json`. 병합한 전체 내용을 보여 주고 사용자에게 직접 적용을 요청한다.
 - **Claude Code 권한 확인**: `.claude/`·`.vscode/` 아래 새 파일은 Claude Code가 민감 경로로 보고 승인을 묻는다(Auto 모드에서는 묻지 않고 만들기도 한다). 거절됐거나 승인할 수 없는 환경이면 내용을 보여 주고, 다시 실행해 승인하거나 직접 만들라고 안내한다.
 
 ```
@@ -140,4 +140,4 @@ argument-hint: "[--dry-run]"
 
 커밋은 사용자가 요청할 때만 한다. 다만 보고 마지막에 다음을 안내한다:
 
-> 다음 작업을 시작하기 전에 세팅을 **별도 커밋**으로 먼저 정리하세요: `/team-ai:commit` (메시지 예: `chore: Claude Code 팀 세팅`). 세팅 파일이 기능 커밋에 섞이지 않게 하기 위해서입니다.
+> 다음 작업을 시작하기 전에 세팅을 **별도 커밋**으로 먼저 정리하세요: `/cc-ready:commit` (메시지 예: `chore: Claude Code 팀 세팅`). 세팅 파일이 기능 커밋에 섞이지 않게 하기 위해서입니다.

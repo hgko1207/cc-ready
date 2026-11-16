@@ -76,7 +76,7 @@ for (const l of planLines) {
 if (todo.length) parts.push("## plan.md 다음 작업\n" + todo.slice(0, 5).join("\n"));
 
 if (parts.length) {
-  let text = "[team-ai] 대화가 압축되었습니다. 이어서 할 작업과 팀 규칙입니다.\n\n" + parts.join("\n\n");
+  let text = "[cc-ready] 대화가 압축되었습니다. 이어서 할 작업과 팀 규칙입니다.\n\n" + parts.join("\n\n");
   if (text.length > MAX) text = text.slice(0, MAX) + "\n…(이하 plan.md·CLAUDE.md·AGENTS.md 참고)";
   process.stdout.write(text + "\n");
 }

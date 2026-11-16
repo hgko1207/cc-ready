@@ -10,7 +10,7 @@ $ARGUMENTS 를 구현하기 전에 조사하고 계획을 세운다. 이 단계�
 
 ## 0. 시작 전 확인
 
-`git status`로 커밋되지 않은 변경이 있는지 본다. 특히 세팅 파일(`CLAUDE.md`, `AGENTS.md`, `.claude/`, `plan.md`, `.vscode/`)이 커밋되지 않았으면, 계획을 세우기 전에 `/team-ai:commit`으로 먼저 정리하자고 알린다. 사용자가 그대로 진행하라고 하면 진행한다.
+`git status`로 커밋되지 않은 변경이 있는지 본다. 특히 세팅 파일(`CLAUDE.md`, `AGENTS.md`, `.claude/`, `plan.md`, `.vscode/`)이 커밋되지 않았으면, 계획을 세우기 전에 `/cc-ready:commit`으로 먼저 정리하자고 알린다. 사용자가 그대로 진행하라고 하면 진행한다.
 
 ## 1. 조사
 

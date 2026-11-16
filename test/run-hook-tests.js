@@ -6,7 +6,7 @@ const fs = require("fs");
 const os = require("os");
 
 const kit = path.join(__dirname, "..");
-const hooks = path.join(kit, "plugins", "team-ai", "hooks");
+const hooks = path.join(kit, "plugins", "cc-ready", "hooks");
 
 let fail = 0;
 function check(ok, label) {
@@ -15,9 +15,9 @@ function check(ok, label) {
 }
 
 function makeProject(config) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "team-ai-test-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cc-ready-test-"));
   fs.mkdirSync(path.join(dir, ".claude"));
-  if (config !== undefined) fs.writeFileSync(path.join(dir, ".claude", "team-ai.json"), typeof config === "string" ? config : JSON.stringify(config));
+  if (config !== undefined) fs.writeFileSync(path.join(dir, ".claude", "cc-ready.json"), typeof config === "string" ? config : JSON.stringify(config));
   spawnSync("git", ["init", "-q", "-b", "feature/test"], { cwd: dir });
   return dir;
 }
@@ -122,7 +122,7 @@ check(run("protect-paths.js", U, { tool_name: "Edit", tool_input: { file_path: f
 // 설정 파일이 깨지면 막는다 (설정 파일 자체 수정은 허용)
 const B = makeProject("{ // 주석\n \"protectedPaths\": [\"db/**\"] }");
 check(run("protect-paths.js", B, { tool_name: "Edit", tool_input: { file_path: f(B, "src", "a.ts") } }).status === 2, "설정 JSON 오류 → 수정 차단");
-check(run("protect-paths.js", B, { tool_name: "Edit", tool_input: { file_path: f(B, ".claude", "team-ai.json") } }).status === 2, "설정 JSON 오류 → 설정 파일도 사람이 고침");
+check(run("protect-paths.js", B, { tool_name: "Edit", tool_input: { file_path: f(B, ".claude", "cc-ready.json") } }).status === 2, "설정 JSON 오류 → 설정 파일도 사람이 고침");
 check(run("block-dangerous-bash.js", B, { tool_name: "Bash", tool_input: { command: "git status" } }).status === 2, "설정 JSON 오류 → 명령도 차단");
 const T = makeProject({ protectedPaths: "db/**" });
 check(run("protect-paths.js", T, { tool_name: "Edit", tool_input: { file_path: f(T, "src", "a.ts") } }).status === 2, "설정 타입 오류 → 수정 차단");
@@ -133,10 +133,18 @@ check(run("protect-paths.js", A, { tool_name: "Edit", tool_input: { file_path: f
 check(run("protect-paths.js", A, { tool_name: "Edit", tool_input: { file_path: f(A, ".git", "config") } }).status === 2, "allowPaths [**] 여도 .git 차단 유지");
 check(run("protect-paths.js", A, { tool_name: "Edit", tool_input: { file_path: f(A, "db", "a.sql") } }).status === 0, "팀 규칙은 팀 allowPaths로 풀 수 있음");
 // 팀 설정 파일: 있으면 수정 금지, 없으면 생성 허용
-check(run("protect-paths.js", A, { tool_name: "Edit", tool_input: { file_path: f(A, ".claude", "team-ai.json") } }).status === 2, "기존 team-ai.json 수정 차단");
+check(run("protect-paths.js", A, { tool_name: "Edit", tool_input: { file_path: f(A, ".claude", "cc-ready.json") } }).status === 2, "기존 cc-ready.json 수정 차단");
 check(run("protect-paths.js", A, { tool_name: "Write", tool_input: { file_path: f(A, ".claude", "settings.json") } }).status === 0, "settings.json 새로 만들기 허용");
 fs.writeFileSync(f(A, ".claude", "settings.json"), "{}");
 check(run("protect-paths.js", A, { tool_name: "Edit", tool_input: { file_path: f(A, ".claude", "settings.json") } }).status === 2, "기존 settings.json 수정 차단");
+
+// 0.5.0까지의 설정 파일 이름(.claude/team-ai.json)도 계속 읽고 보호한다
+const L = makeProject();
+fs.writeFileSync(f(L, ".claude", "team-ai.json"), JSON.stringify({ protectedPaths: ["db/**"] }));
+check(run("protect-paths.js", L, { tool_name: "Edit", tool_input: { file_path: f(L, "db", "a.sql") } }).status === 2, "예전 team-ai.json의 보호 경로도 적용");
+check(run("protect-paths.js", L, { tool_name: "Edit", tool_input: { file_path: f(L, ".claude", "team-ai.json") } }).status === 2, "기존 team-ai.json 수정 차단");
+fs.writeFileSync(f(L, ".claude", "cc-ready.json"), JSON.stringify({ protectedPaths: [] }));
+check(run("protect-paths.js", L, { tool_name: "Edit", tool_input: { file_path: f(L, "db", "a.sql") } }).status === 0, "새 cc-ready.json이 있으면 그것을 우선");
 // 위험한 팀 정규식은 설정 오류
 const X = makeProject({ blockedCommands: ["(a+)+$"] });
 check(run("block-dangerous-bash.js", X, { tool_name: "Bash", tool_input: { command: "ls" } }).status === 2, "중첩 반복 정규식 설정은 오류로 차단");
@@ -168,7 +176,7 @@ for (const d of [A, X]) fs.rmSync(d, { recursive: true, force: true });
 // ---------- 규칙 재주입 ----------
 console.log("\n# 규칙 재주입");
 const R = makeProject({ reinjectSections: ["하지 말 것"] });
-const tpl = path.join(kit, "plugins", "team-ai", "skills", "setup", "templates");
+const tpl = path.join(kit, "plugins", "cc-ready", "skills", "setup", "templates");
 fs.copyFileSync(path.join(tpl, "plan.md"), path.join(R, "plan.md"));
 fs.copyFileSync(path.join(tpl, "CLAUDE.md"), path.join(R, "CLAUDE.md"));
 let out = run("reinject-rules.js", R, { hook_event_name: "SessionStart", source: "compact" }).stdout;
@@ -186,7 +194,7 @@ out = run("reinject-rules.js", R, {}).stdout;
 check(out.includes("결제 화면") && !out.includes("개인정보처리방침"), "출시 전 확인 섹션의 체크 줄은 다음 작업에 섞지 않음");
 // AGENTS 방식: CLAUDE.md가 @AGENTS.md를 가져오고 공통 규칙은 AGENTS.md에 있다
 const RA = makeProject({ reinjectSections: ["검증 명령", "하지 말 것"] });
-fs.writeFileSync(path.join(RA, "CLAUDE.md"), "@AGENTS.md\n\n## 작업 방식\n\n- 계획은 /team-ai:plan-feature\n");
+fs.writeFileSync(path.join(RA, "CLAUDE.md"), "@AGENTS.md\n\n## 작업 방식\n\n- 계획은 /cc-ready:plan-feature\n");
 fs.writeFileSync(path.join(RA, "AGENTS.md"), "# t\n\n## 검증 명령\n\n1. npm test\n\n## 하지 말 것\n\n- 에이전트 금지\n\n## 용어\n\n- 무관\n");
 out = run("reinject-rules.js", RA, {}).stdout;
 check(out.includes("1. npm test") && out.includes("에이전트 금지") && !out.includes("무관"), "CLAUDE.md에 없는 섹션은 AGENTS.md에서 가져옴");
@@ -202,19 +210,19 @@ fs.rmSync(RA, { recursive: true, force: true });
 console.log("\n# 포맷");
 const F = makeProject();
 fs.writeFileSync(path.join(F, "fmt.js"), "require('fs').appendFileSync(process.argv[2], '//ok')");
-fs.writeFileSync(path.join(F, ".claude", "team-ai.json"), JSON.stringify({ formatCommand: ["node", "fmt.js", "{file}"] }));
+fs.writeFileSync(path.join(F, ".claude", "cc-ready.json"), JSON.stringify({ formatCommand: ["node", "fmt.js", "{file}"] }));
 const weird = path.join(F, "a$(echo HACK)%USERNAME%.ts");
 fs.writeFileSync(weird, "x");
 let r = run("format-after-edit.js", F, { tool_name: "Edit", tool_input: { file_path: weird } });
 check(r.status === 0 && fs.readFileSync(weird, "utf8").endsWith("//ok"), "특수문자 파일 이름도 그대로 전달 (셸 해석 없음)");
-fs.writeFileSync(path.join(F, ".claude", "team-ai.json"), JSON.stringify({ formatCommand: ["node", "-e", "process.exit(3)"] }));
+fs.writeFileSync(path.join(F, ".claude", "cc-ready.json"), JSON.stringify({ formatCommand: ["node", "-e", "process.exit(3)"] }));
 r = run("format-after-edit.js", F, { tool_name: "Edit", tool_input: { file_path: weird } });
 check(r.status === 2 && r.stderr.includes("포맷 명령이 실패"), "포맷 실패는 exit 2로 Claude에게 알림");
-fs.writeFileSync(path.join(F, ".claude", "team-ai.json"), JSON.stringify({}));
+fs.writeFileSync(path.join(F, ".claude", "cc-ready.json"), JSON.stringify({}));
 check(run("format-after-edit.js", F, { tool_name: "Edit", tool_input: { file_path: weird } }).status === 0, "포맷 명령 없으면 아무것도 안 함");
 // {file}이 다른 글자와 붙어 있어도 치환
 fs.writeFileSync(path.join(F, "fmt2.js"), "const a=process.argv[2].replace('--file=','');require('fs').appendFileSync(a,'//eq')");
-fs.writeFileSync(path.join(F, ".claude", "team-ai.json"), JSON.stringify({ formatCommand: ["node", "fmt2.js", "--file={file}"] }));
+fs.writeFileSync(path.join(F, ".claude", "cc-ready.json"), JSON.stringify({ formatCommand: ["node", "fmt2.js", "--file={file}"] }));
 r = run("format-after-edit.js", F, { tool_name: "Edit", tool_input: { file_path: weird } });
 check(r.status === 0 && fs.readFileSync(weird, "utf8").endsWith("//eq"), "--file={file} 형태 치환");
 // Windows: .bin 에 .cmd 만 있는 scoped 패키지 (npm cmd-shim)
@@ -225,7 +233,7 @@ if (process.platform === "win32") {
   fs.writeFileSync(path.join(pk, "bin", "run.js"), "require('fs').appendFileSync(process.argv[2],'//shim')");
   fs.mkdirSync(path.join(F, "node_modules", ".bin"), { recursive: true });
   fs.writeFileSync(path.join(F, "node_modules", ".bin", "acmefmt.cmd"), '@"%dp0%\\..\\@acme\\fmt-tool\\bin\\run.js" %*\r\n');
-  fs.writeFileSync(path.join(F, ".claude", "team-ai.json"), JSON.stringify({ formatCommand: ["npx", "--no-install", "-p", "@acme/fmt-tool", "acmefmt", "{file}"] }));
+  fs.writeFileSync(path.join(F, ".claude", "cc-ready.json"), JSON.stringify({ formatCommand: ["npx", "--no-install", "-p", "@acme/fmt-tool", "acmefmt", "{file}"] }));
   r = run("format-after-edit.js", F, { tool_name: "Edit", tool_input: { file_path: weird } });
   check(r.status === 0 && fs.readFileSync(weird, "utf8").endsWith("//shim"), "Windows .cmd 전용 scoped 패키지 + npx -p 처리");
 }
@@ -234,11 +242,11 @@ if (process.platform === "win32") {
 console.log("\n# JSON 문법");
 for (const rel of [
   ".claude-plugin/marketplace.json",
-  "plugins/team-ai/.claude-plugin/plugin.json",
-  "plugins/team-ai-extras/.claude-plugin/plugin.json",
-  "plugins/team-ai/hooks/hooks.json",
-  "plugins/team-ai/skills/setup/templates/.claude/settings.json",
-  "plugins/team-ai/skills/setup/templates/.claude/team-ai.json"
+  "plugins/cc-ready/.claude-plugin/plugin.json",
+  "plugins/cc-ready-extras/.claude-plugin/plugin.json",
+  "plugins/cc-ready/hooks/hooks.json",
+  "plugins/cc-ready/skills/setup/templates/.claude/settings.json",
+  "plugins/cc-ready/skills/setup/templates/.claude/cc-ready.json"
 ]) {
   let ok = true;
   try { JSON.parse(fs.readFileSync(path.join(kit, rel), "utf8")); } catch { ok = false; }
