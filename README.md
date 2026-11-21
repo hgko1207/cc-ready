@@ -63,6 +63,7 @@ claude plugin install cc-ready@cc-ready
 | 안전망 먼저, 작은 단계 리팩터링 | `/cc-ready-extras:refactor 대상` |
 | 커밋·검증 확인 후 push와 PR 만들기 | `/cc-ready-extras:open-pr` |
 | 코드 변경으로 틀린 문서 고치기 | `/cc-ready-extras:update-docs` |
+| 프로젝트 전체 점검과 점수표 (기능, 디자인, 사용성, 코드, 주석, 보안 등 10개 영역, 직전과 비교) | `/cc-ready-extras:audit` (코드만 빠르게: `--quick`) |
 | 지적이 맞는지 반대로 검증 | `verifier 에이전트로 이 지적이 맞는지 확인해줘` |
 
 ## 들어 있는 것
@@ -74,7 +75,7 @@ plugins/
 │   ├── skills/  setup, plan-feature, verify, review-pr, commit
 │   └── hooks/   보호 경로 차단, 위험 명령 차단, 수정 후 포맷, 대화 압축 후 남은 작업 다시 알림
 └── cc-ready-extras/           선택
-    ├── skills/  fix-issue, refactor, open-pr, update-docs
+    ├── skills/  fix-issue, refactor, open-pr, update-docs, audit
     └── agents/  verifier
 examples/rules/               스택 규칙 예시 (TS 웹, Python, Java/Spring, C#/.NET, Kotlin/Android)
 docs/                         QUICKSTART, VS Code·Windows 참고
